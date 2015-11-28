@@ -1,32 +1,20 @@
-import ftplib
-import socket
+from ftpscanner import FTPScanner
 
 def main():
     url = 'ftp.winzip.com'
     
-    ftpconn = open_ftp_connection(url)
-    if ftpconn == None:
+    ftpconn = FTPScanner(url)
+    if not ftpconn.is_connected:
         return
     
     # list all files on the server in the root directory
-    ftpconn.retrlines('LIST')
+    files = ftpconn.get_directory_list()
     
-    ftpconn.quit() # close connection
+    for f in files:
+        print f
     
-def open_ftp_connection(siteurl, port=21):
-    try:
-        conn = ftplib.FTP()
-        conn.connect(siteurl, port)
-        conn.login() # user anonymous, passwd anonymous@
-        return conn
-        
-    except ftplib.error_perm as e:
-        print "Server Error (%s): %s" % (siteurl, e)
-        
-    except socket.error as e:
-        print "Server timeout"
-        
-    return None
+    ftpconn.close()
     
+
 if __name__ == "__main__":
     main()
