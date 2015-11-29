@@ -45,6 +45,9 @@ def main():
     
     for path, f in db.get_files_for_server(url):
         print '%s/%s' % (path, f)
+        if f.endswith('.txt'):
+            tmp = ftpconn.download_file(path + '/' + f)
+            print "\t%s" % tmp
     
     # cleanup
     ftpconn.close()
