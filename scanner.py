@@ -1,5 +1,6 @@
 from ftpscanner import FTPScanner
 from database import Database
+from indexer import Indexer
 
 def depth_first_search(ftpconn, path="", files=[]):
     dirs = ftpconn.get_directory_list()
@@ -18,7 +19,9 @@ def depth_first_search(ftpconn, path="", files=[]):
 
 def main():
     dbname = 'ftp_files.db'
+    xname = 'xapian.db'
     db = Database(dbname)
+    indexer = Indexer(xname)
     
     # test ftp servers
     url = 'readyshare'
