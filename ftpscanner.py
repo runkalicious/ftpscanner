@@ -16,7 +16,7 @@ class FTPScanner:
             print "Server Error (%s): %s" % (siteurl, e)
             
         except socket.error as e:
-            print "Server timeout"
+            print e
         
     def close(self):
         if self.__conn is not None:
@@ -33,12 +33,19 @@ class FTPScanner:
         
         dirs = []
         
+        def append_dirs_mlsd(item):
+            parts = item.split(';')
+            if parts[-1] not in ['.', '..']:
+                dirs.append(parts[-1].trim())
+        
         def append_dirs(item):
             if item.startswith('d'):
-                dirs.append(item)
+                parts = item.split()
+                if parts[-1] not in ['.', '..']:
+                    dirs.append(' '.join(parts[8:]))
         
         try:
-            self.__conn.retrlines('MLSD', dirs.append)
+            self.__conn.retrlines('MLSD', append_dirs_mlsd)
         except ftplib.error_perm as e:
             # MLSD likely not supported, fallback to LIST
             self.__conn.retrlines('LIST', append_dirs)
@@ -53,7 +60,8 @@ class FTPScanner:
         
         def append_files(item):
             if not item.startswith('d'):
-                files.append(item)
+                parts = item.split()
+                files.append(' '.join(parts[8:]))
         
         try:
             self.__conn.retrlines('NLIST', files.append)
