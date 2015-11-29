@@ -22,7 +22,7 @@ def main():
     dbname = 'ftp_files.db'
     xname = 'xapian.db'
     db = Database(dbname)
-    indexer = Indexer(xname)
+    indexer = Indexer(xname, writeable=True)
     
     # test ftp servers
     url = 'readyshare'
@@ -52,8 +52,13 @@ def main():
             indexer.add_content(url, id, path, fname, tmp)
             os.remove(tmp)
     
-    # cleanup
     indexer.flush()
+    
+    # test query
+    indexer.search("night")
+    
+    # cleanup
+    indexer.close()
     ftpconn.close()
     db.close()
     
