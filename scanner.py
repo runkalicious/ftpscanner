@@ -47,15 +47,10 @@ def main():
     for id, path, fname in db.get_files_for_server(url):
         if fname.endswith('.txt'):
             tmp = ftpconn.download_file(path + '/' + fname)
-            print '%s/%s' % (path, fname)
-            print "\t%s" % tmp
             indexer.add_content(url, id, path, fname, tmp)
             os.remove(tmp)
     
     indexer.flush()
-    
-    # test query
-    indexer.search("night")
     
     # cleanup
     indexer.close()

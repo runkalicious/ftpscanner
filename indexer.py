@@ -2,6 +2,13 @@ import xapian
 from textmachine import TextMachine
 
 class Indexer:
+    '''
+    Text Indexer built on xapian. 
+    It supports updating the corpus and querying for values
+
+    A lot of this is based on an incredibly useful article at:
+    http://invisibleroads.com/tutorials/xapian-search-pylons.html
+    '''
     __db = None
     __indexer = None
     __queryparser = None
@@ -31,7 +38,8 @@ class Indexer:
     
     def close(self):
         if self.__db is not None:
-            self.__db.flush()
+            if type(self.__db) is xapian.WritableDatabase:
+                self.__db.flush()
             self.__db.close()
     
     def add_content(self, server, fileid, filepath, filename, fcontent):
@@ -66,13 +74,18 @@ class Indexer:
         
         # Display matches
         matches = enquire.get_mset(offset, limit)
+        
+        results = []
         for match in matches:
-            print '==================='
-            print 'rank=%s, documentID=%s' % (match.rank, match.docid)
-            print '-------------------'
             content = match.document.get_data()
             extract = TextMachine(extractlength, '*%s*').process(searchterm, content)
-            print extract.replace('\n', ' ')
-        print '==================='
-        print 'Number of documents matching query: %s' % matches.get_matches_estimated()
-        print 'Number of documents returned: %s' % matches.size()
+            
+            result = {
+                "rank": match.rank,
+                "docid": match.docid,
+                "text": extract
+            }
+            
+            results.append(result)
+        
+        return (matches.get_matches_estimated(), matches.size(), results)

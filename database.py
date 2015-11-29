@@ -49,6 +49,14 @@ class Database:
         id = self.__cursor.fetchone()
         return None if (id is None) else id[0]
     
+    def get_server_from_file(self, fid):
+        if self.__cursor is None:
+            return None
+            
+        self.__cursor.execute('select uri from server join file on server.id=file.serverid where file.id=?', (fid,))
+        row = self.__cursor.fetchone()
+        return None if (row is None) else row[0]
+        
     def add_file(self, serverid, filepath, filename):
         if self.__cursor is None:
             return
@@ -56,6 +64,17 @@ class Database:
         self.__cursor.execute('insert into file values (NULL, ?, ?, ?)', (serverid, filepath, filename))
         self.__conn.commit()
         return self.__cursor.lastrowid
+    
+    def get_full_filepath(self, fid):
+        if self.__cursor is None:
+            return None
+            
+        self.__cursor.execute('select path, filename from file where file.id=?', (fid,))
+        row = self.__cursor.fetchone()
+        ret = None
+        if row is not None:
+            ret = row[0] + '/' + row[1]
+        return ret
     
     def get_files_for_server(self, uri):
         if self.__cursor is None:
