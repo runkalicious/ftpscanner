@@ -1,4 +1,4 @@
-import os
+import os, sys, getopt
 from ftpscanner import FTPScanner
 from database import Database
 from indexer import Indexer
@@ -35,7 +35,7 @@ def enumerate_files(ftp_server_uri, database):
     welcome = "" #TODO
     
     # Record server and get server id
-    sid = database.add_server(ftp_server_uri, "")
+    sid = database.add_server(ftp_server_uri, welcome)
     
     # Map all files on the server
     files = []
@@ -71,29 +71,77 @@ def index_content(ftp_server_uri, indexer, database):
     ftpconn.close()
     return True
     
-def main(dbname='ftp_files.db', xname='xapian.db'):
+def main(flist, dbname='ftp_files.db', xname='xapian.db', verbose=False):
     '''
     Main method: dispatches tasks to catalogue and index remote FTP servers.
     '''
     db = Database(dbname)
     indexer = Indexer(xname, writeable=True)
     
-    # test ftp servers
-    url = 'readyshare'
-    #url = 'arnold.c64.org'
-    #url = 'ftp.winzip.com'
+    # Read list of remote FTP servers
+    servers = []
+    with open(flist) as f:
+        servers = f.read().splitlines()
     
-    # Record all files on a remote server
-    if not enumerate_files(url, db):
-        print "Could not enumerate files on %s" % url
+    for server in servers:
+        if verbose: print "Scanning: %s" % server
+        
+        # Record all files on a remote server
+        if not enumerate_files(server, db):
+            print "Could not enumerate files on %s" % server
+        
+        # Download text and add to corpus
+        if not index_content(server, indexer, db):
+            print "Could not index %s" % server
     
-    # Download text and add to corpus
-    if not index_content(url, indexer, db):
-        print "Could not index %s" % url
+    if verbose: print "\nCataloguing and indexing complete."
     
     # cleanup
     indexer.close()
     db.close()
+
+def help():
+    '''
+    Prints script help documentation
+    '''
+    print 'scanner.py -f <ftp sites> [-d <database>] [-x <xapian>] [-v]'
+    print
+    print '- Required -'
+    print '-f <ftp sites>'
+    print '\tThe name of the newline-delimited file of FTP server addresses'
+    print
+    print '- Optional -'
+    print '-d <database>'
+    print '\tDetermines the name of the database (or filename with sqlite). Default: ftp_files.db'
+    print '-x <xapian>'
+    print '\tDetermines the name of the xapian database to use or create. Default: xapian.db'
+    print '-v'
+    print '\tEnables verbose logging'
+    print
     
 if __name__ == "__main__":
-    main()
+    params = {}
+    try:
+        opts, args = getopt.getopt(sys.argv[1:],'hf:d:x:v',['ftpservers=','database=','xapian='])
+    except getopt.GetoptError:
+        help()
+        sys.exit(2)
+    
+    for opt, arg in opts:
+        if opt == '-h':
+            help()
+            sys.exit()
+        elif opt in ('-f', '--ftpservers'):
+            params['flist'] = arg
+        elif opt in ('-d', '--database'):
+            params['dbname'] = arg
+        elif opt in ('-x', '--xapian'):
+            params['xname'] = arg
+        elif opt == '-v':
+            params['verbose'] = True
+    
+    if 'flist' not in params:
+        print "You must specify a file containing FTP server addresses!"
+        sys.exit(1)
+    
+    main(**params)
