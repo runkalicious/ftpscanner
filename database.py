@@ -14,8 +14,11 @@ class Database:
         if self.__cursor is None:
             return
             
-        self.__cursor.execute('create table if not exists server (id integer primary key, uri text, welcome text)')
-        self.__cursor.execute('create table if not exists file (id integer primary key, serverid integer, path text, filename text)')
+        self.__cursor.execute('create table if not exists server \
+            (id integer primary key, uri text, welcome text)')
+        self.__cursor.execute('create table if not exists file \
+            (id integer primary key, serverid integer, path text, \
+            filename text, unique(serverid, path, filename) on conflict ignore)')
     
     def close(self):
         self.__cursor = None
@@ -59,7 +62,6 @@ class Database:
             return []
             
         sid = self.get_server_id(uri)
-        print sid
         if sid is None:
             return []
         
