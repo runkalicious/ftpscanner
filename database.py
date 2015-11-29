@@ -65,5 +65,5 @@ class Database:
         if sid is None:
             return []
         
-        self.__cursor.execute('select path, filename from file where serverid=?', (sid,))
+        self.__cursor.execute('select id, path, filename from file where serverid=?', (sid,))
         return self.__cursor.fetchall()

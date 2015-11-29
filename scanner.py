@@ -1,3 +1,4 @@
+import os
 from ftpscanner import FTPScanner
 from database import Database
 from indexer import Indexer
@@ -43,13 +44,16 @@ def main():
     for path, f in files:
         db.add_file(sid, path, f)
     
-    for path, f in db.get_files_for_server(url):
-        print '%s/%s' % (path, f)
-        if f.endswith('.txt'):
-            tmp = ftpconn.download_file(path + '/' + f)
+    for id, path, fname in db.get_files_for_server(url):
+        if fname.endswith('.txt'):
+            tmp = ftpconn.download_file(path + '/' + fname)
+            print '%s/%s' % (path, fname)
             print "\t%s" % tmp
+            indexer.add_content(url, id, path, fname, tmp)
+            os.remove(tmp)
     
     # cleanup
+    indexer.flush()
     ftpconn.close()
     db.close()
     
