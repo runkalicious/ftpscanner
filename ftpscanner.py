@@ -24,7 +24,12 @@ class FTPScanner:
         if self.__conn is not None:
             self.__conn.quit()
             self.is_connected = False
-        
+    
+    def get_welcome(self):
+        if self.__conn is not None:
+            return self.__conn.getwelcome()
+        return ""
+    
     def change_working_dir(self, path):
         if self.__conn is not None:
             self.__conn.cwd(path)

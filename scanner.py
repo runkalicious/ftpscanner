@@ -32,7 +32,7 @@ def enumerate_files(ftp_server_uri, database):
         return False
     
     # Get welcome banner, if any
-    welcome = "" #TODO
+    welcome = ftpconn.get_welcome()
     
     # Record server and get server id
     sid = database.add_server(ftp_server_uri, welcome)
