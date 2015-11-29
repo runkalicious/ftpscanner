@@ -1,4 +1,5 @@
 from ftpscanner import FTPScanner
+from database import Database
 
 def depth_first_search(ftpconn, path="", files=[]):
     dirs = ftpconn.get_directory_list()
@@ -16,6 +17,10 @@ def depth_first_search(ftpconn, path="", files=[]):
         files.append((path, f))
 
 def main():
+    dbname = 'ftp_files.db'
+    db = Database(dbname)
+    
+    # test ftp servers
     url = 'readyshare'
     #url = 'arnold.c64.org'
     #url = 'ftp.winzip.com'
@@ -24,16 +29,23 @@ def main():
     if not ftpconn.is_connected:
         return
     
-    # list all files on the server in the root directory
-    #files = ftpconn.get_directory_list()
+    # Record server and get server id
+    sid = db.add_server(url, "")
     
+    # Map all files on the server
     files = []
     depth_first_search(ftpconn, files=files)
     
+    # Store all found files in our local database
     for path, f in files:
-        print path + '/' + f
+        db.add_file(sid, path, f)
     
+    for path, f in db.get_files_for_server(url):
+        print '%s/%s' % (path, f)
+    
+    # cleanup
     ftpconn.close()
+    db.close()
     
 if __name__ == "__main__":
     main()
