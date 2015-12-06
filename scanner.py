@@ -1,9 +1,9 @@
-import os, sys, getopt
+import os, sys, getopt, socket
 from ftpscanner import FTPScanner
 from database import Database
 from indexer import Indexer
 
-def enumerate_files(ftp_server_uri, database):
+def enumerate_files(ftp_server_uri, database, verbose=False):
     '''
     Connect to a remote public FTP server and enumerate all files present.
     This uses a depth-first approach to finding all files.
@@ -27,7 +27,7 @@ def enumerate_files(ftp_server_uri, database):
             files.append((path, f))
 
     # Connect to the remote server
-    ftpconn = FTPScanner(ftp_server_uri)
+    ftpconn = FTPScanner(ftp_server_uri, logging=verbose)
     if not ftpconn.is_connected:
         return False
     
@@ -48,7 +48,7 @@ def enumerate_files(ftp_server_uri, database):
     ftpconn.close()
     return True
     
-def index_content(ftp_server_uri, indexer, database):
+def index_content(ftp_server_uri, indexer, database, verbose=False):
     '''
     Connects to a remote public FTP server and downloads all text files.
     This assumes the server was already catalogued previously. The contents
@@ -57,7 +57,7 @@ def index_content(ftp_server_uri, indexer, database):
     Returns True if successful, otherwise False
     '''
     # Connect to the remote server
-    ftpconn = FTPScanner(ftp_server_uri)
+    ftpconn = FTPScanner(ftp_server_uri, logging=verbose)
     if not ftpconn.is_connected:
         return False
     
@@ -71,6 +71,23 @@ def index_content(ftp_server_uri, indexer, database):
     ftpconn.close()
     return True
     
+def is_open_ftp_server(server, port=21):
+    '''
+    Connects to the specified server on the specified port to determine if 
+    the port is open.
+    
+    Returns True if successful, otherwise False
+    '''
+    socket.setdefaulttimeout(0.5)
+    skt = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    
+    try:
+        ip = socket.gethostbyname(server)
+        skt.connect((ip, port))
+        return True
+    except:
+        return False
+    
 def main(flist, plist='prefix.conf', dbname='ftp_files.db', xname='xapian.db', verbose=False):
     '''
     Main method: dispatches tasks to catalogue and index remote FTP servers.
@@ -80,7 +97,7 @@ def main(flist, plist='prefix.conf', dbname='ftp_files.db', xname='xapian.db', v
     
     # Read list of prefixes
     prefixes = []
-    with open(plist):
+    with open(plist) as f:
         prefixes = f.read().splitlines()
     
     # Read list of remote FTP servers
@@ -88,16 +105,29 @@ def main(flist, plist='prefix.conf', dbname='ftp_files.db', xname='xapian.db', v
     with open(flist) as f:
         servers = f.read().splitlines()
     
+    # Compile list of all servers
+    for server in servers[:]:
+        idx = servers.index(server)
+        for prefix in prefixes:
+            servers.insert(idx, prefix + '.' + server)
+    
     for server in servers:
         if verbose: print "Scanning: %s" % server
         
+        # Determine if server is a valid FTP site
+        if not is_open_ftp_server(server):
+            continue
+        
+        if verbose: print "\tServer is valid, connecting..."
+        
         # Record all files on a remote server
-        if not enumerate_files(server, db):
-            print "Could not enumerate files on %s" % server
+        if not enumerate_files(server, db, verbose=verbose):
+            print "\tCould not enumerate files on %s" % server
+            continue
         
         # Download text and add to corpus
-        if not index_content(server, indexer, db):
-            print "Could not index %s" % server
+        if not index_content(server, indexer, db, verbose=verbose):
+            print "\tCould not index %s" % server
     
     if verbose: print "\nCataloguing and indexing complete."
     

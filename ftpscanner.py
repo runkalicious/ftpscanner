@@ -4,9 +4,12 @@ import tempfile
 
 class FTPScanner:
     __conn = None
+    __logging = None
     is_connected = False
     
-    def __init__(self, siteurl, port=21):
+    def __init__(self, siteurl, port=21, logging=False):
+        self.__logging = logging
+        
         try:
             self.__conn = ftplib.FTP()
             self.__conn.connect(siteurl, port)
@@ -15,10 +18,10 @@ class FTPScanner:
             self.is_connected = True
             
         except ftplib.error_perm as e:
-            print "Server Error (%s): %s" % (siteurl, e)
+            if self.__logging: print "\tServer Error (%s): %s" % (siteurl, e)
             
         except socket.error as e:
-            print e
+            if self.__logging: print "\t%s" % e
         
     def close(self):
         if self.__conn is not None:
@@ -60,7 +63,7 @@ class FTPScanner:
                 # MLSD likely not supported, fallback to LIST
                 self.__conn.retrlines('LIST', append_dirs)
         except ftplib.error_temp as e:
-            print e
+            if self.__logging: print "\t%s" % e
             
         return dirs
         
@@ -81,7 +84,7 @@ class FTPScanner:
                 # NLIST likely not supported, fallback to LIST
                 self.__conn.retrlines('LIST', append_files)
         except ftplib.error_temp as e:
-            print e
+            if self.__logging: print "\t%s" % e
         
         return files
 
@@ -101,10 +104,10 @@ class FTPScanner:
                 self.__conn.storlines('RETR ' + filepath, tmp.write)
                 
         except ftplib.error_temp as e:
-            print e
+            if self.__logging: print "\t%s" % e
             
         except ftplib.error_perm as e:
-            print e
+            if self.__logging: print "\t%s" % e
         
         tmpname = tmp.name
         tmp.close()
