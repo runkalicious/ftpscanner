@@ -71,12 +71,17 @@ def index_content(ftp_server_uri, indexer, database):
     ftpconn.close()
     return True
     
-def main(flist, dbname='ftp_files.db', xname='xapian.db', verbose=False):
+def main(flist, plist='prefix.conf', dbname='ftp_files.db', xname='xapian.db', verbose=False):
     '''
     Main method: dispatches tasks to catalogue and index remote FTP servers.
     '''
     db = Database(dbname)
     indexer = Indexer(xname, writeable=True)
+    
+    # Read list of prefixes
+    prefixes = []
+    with open(plist):
+        prefixes = f.read().splitlines()
     
     # Read list of remote FTP servers
     servers = []
@@ -104,13 +109,15 @@ def help():
     '''
     Prints script help documentation
     '''
-    print 'scanner.py -f <ftp sites> [-d <database>] [-x <xapian>] [-v]'
+    print 'scanner.py -f <ftp sites> [-p <prefixes>] [-d <database>] [-x <xapian>] [-v]'
     print
     print '- Required -'
     print '-f <ftp sites>'
     print '\tThe name of the newline-delimited file of FTP server addresses'
     print
     print '- Optional -'
+    print '-p <prefixes>'
+    print '\tThe name of the newline-delimited file of URL prefixes. Default: prefix.conf'
     print '-d <database>'
     print '\tDetermines the name of the database (or filename with sqlite). Default: ftp_files.db'
     print '-x <xapian>'
@@ -122,7 +129,7 @@ def help():
 if __name__ == "__main__":
     params = {}
     try:
-        opts, args = getopt.getopt(sys.argv[1:],'hf:d:x:v',['ftpservers=','database=','xapian='])
+        opts, args = getopt.getopt(sys.argv[1:],'hf:p:d:x:v',['ftpservers=','prefix=','database=','xapian='])
     except getopt.GetoptError:
         help()
         sys.exit(2)
@@ -133,6 +140,8 @@ if __name__ == "__main__":
             sys.exit()
         elif opt in ('-f', '--ftpservers'):
             params['flist'] = arg
+        elif opt in ('-p', '--prefix'):
+            params['plist'] = arg
         elif opt in ('-d', '--database'):
             params['dbname'] = arg
         elif opt in ('-x', '--xapian'):

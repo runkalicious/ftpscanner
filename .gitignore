@@ -60,4 +60,4 @@ target/
 *.db
 
 # Configuration
-*.conf
+ftp_servers.conf
